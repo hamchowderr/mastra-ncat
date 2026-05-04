@@ -104,6 +104,23 @@
   - Note: `docker compose up` reads `env_file` which overrides shell env prefix; use `docker run -e` to override SUPABASE_DB_URL for local testing
   - Note: local Supabase runs on 127.0.0.1:54322 — Docker containers must use host.docker.internal:54322 (documented in README)
 
+## NCA Polish — Standard Reachability + Editor Configuration — COMPLETE ✅
+
+- Status: complete
+- All 4 polish steps:
+  - 01 Install Packages + Editor Storage: pass
+  - 02 Configure MCPServer + MastraEditor: pass
+  - 03 Verify + Document Reachability: pass
+  - 04 Push to Main: pass
+- Repo: https://github.com/hamchowderr/template-mastra-nca
+- CI: all 4 jobs green (typecheck 27s, eval 1m9s, build 44s, docker 1m47s)
+- Packages installed: @mastra/editor@0.7.22, @mastra/mcp@1.6.0
+- Files changed: package.json, package-lock.json, src/mastra/index.ts, README.md, AGENTS.md, src/mastra/agents/_example.ts (description), src/mastra/agents/media-supervisor.ts (description), SPEC/polish-protocols/
+- nca.ts HTTP client: NOT MODIFIED (verified)
+- All 7 agents registered with MCPServer; all 7 ask_* tools confirmed in tools/list response
+- No new tag pushed
+- Note: MCP session-based — mcp-session-id header required; documented in README curl example and AGENTS.md
+
 ## NCA Polish 03: Verify + Document Reachability ✅
 - Status: complete
 - Endpoints verified:
