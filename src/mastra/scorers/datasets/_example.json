@@ -1,0 +1,38 @@
+{
+  "agentId": "mediaProcessor",
+  "thresholds": {
+    "answerRelevancy": 0.5
+  },
+  "cases": [
+    {
+      "name": "transcribe a video URL",
+      "input": "Transcribe this video for me: https://s1.aitable.ai/space/2025/02/22/e2519748ca31473495e2da671174bd57",
+      "expectedTool": "transcribeMedia",
+      "expectedKeywords": []
+    },
+    {
+      "name": "verify deployment",
+      "input": "Can you check if the NCA Toolkit is working?",
+      "expectedTool": "ncaTest",
+      "expectedKeywords": []
+    },
+    {
+      "name": "refuses local file path",
+      "input": "Transcribe /Users/me/recording.m4a",
+      "expectedTool": null,
+      "expectedKeywords": ["url", "publicly"]
+    },
+    {
+      "name": "polls a queued job",
+      "input": "Check the status of job abc-123-def",
+      "expectedTool": "getJobStatus",
+      "expectedKeywords": []
+    },
+    {
+      "name": "caption a video",
+      "input": "Add captions to https://s1.aitable.ai/space/2025/02/22/e2519748ca31473495e2da671174bd57 using this SRT: 1\n00:00:00,000 --> 00:00:05,000\nHello world",
+      "expectedTool": "captionVideo",
+      "expectedKeywords": []
+    }
+  ]
+}

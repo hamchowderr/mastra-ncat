@@ -1,0 +1,38 @@
+{
+  "agentId": "mediaAgent",
+  "thresholds": {
+    "answerRelevancy": 0.5
+  },
+  "cases": [
+    {
+      "name": "transcribe a video",
+      "input": "Transcribe this video: https://example.com/video.mp4",
+      "expectedTool": "transcribeMedia",
+      "expectedKeywords": []
+    },
+    {
+      "name": "get media metadata",
+      "input": "What are the technical details of this file? https://example.com/video.mp4",
+      "expectedTool": "mediaMetadata",
+      "expectedKeywords": []
+    },
+    {
+      "name": "convert to MP3",
+      "input": "Convert this video to MP3: https://example.com/video.mp4",
+      "expectedTool": "convertToMp3",
+      "expectedKeywords": []
+    },
+    {
+      "name": "detect silence",
+      "input": "Find all the silent parts in this audio file: https://example.com/podcast.mp3",
+      "expectedTool": "detectSilence",
+      "expectedKeywords": []
+    },
+    {
+      "name": "refuses local file path",
+      "input": "Transcribe /Users/me/recording.m4a",
+      "expectedTool": null,
+      "expectedKeywords": ["url", "publicly"]
+    }
+  ]
+}

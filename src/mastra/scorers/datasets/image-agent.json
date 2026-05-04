@@ -1,0 +1,20 @@
+{
+  "agentId": "imageAgent",
+  "thresholds": {
+    "answerRelevancy": 0.5
+  },
+  "cases": [
+    {
+      "name": "screenshot a webpage",
+      "input": "Take a screenshot of https://example.com",
+      "expectedTool": "screenshotWebpage",
+      "expectedKeywords": []
+    },
+    {
+      "name": "convert image to video",
+      "input": "Turn this image into a video with a zoom effect: https://example.com/photo.jpg",
+      "expectedTool": "imageToVideo",
+      "expectedKeywords": []
+    }
+  ]
+}

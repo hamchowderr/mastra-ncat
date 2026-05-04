@@ -1,0 +1,38 @@
+{
+  "agentId": "mediaSupervisor",
+  "thresholds": {
+    "answerRelevancy": 0.5
+  },
+  "cases": [
+    {
+      "name": "routes transcription to mediaAgent",
+      "input": "Transcribe this video: https://example.com/video.mp4",
+      "expectedTool": null,
+      "expectedKeywords": ["transcri"]
+    },
+    {
+      "name": "routes trim to videoAgent",
+      "input": "Trim this video to the first 30 seconds: https://example.com/video.mp4",
+      "expectedTool": null,
+      "expectedKeywords": ["trim", "video"]
+    },
+    {
+      "name": "routes screenshot to imageAgent",
+      "input": "Take a screenshot of https://example.com",
+      "expectedTool": null,
+      "expectedKeywords": ["screenshot"]
+    },
+    {
+      "name": "routes health check to toolkitAgent",
+      "input": "Is the NCA Toolkit API working?",
+      "expectedTool": null,
+      "expectedKeywords": ["working", "api", "toolkit"]
+    },
+    {
+      "name": "refuses local file path",
+      "input": "Transcribe /Users/me/recording.m4a",
+      "expectedTool": null,
+      "expectedKeywords": ["url", "publicly"]
+    }
+  ]
+}

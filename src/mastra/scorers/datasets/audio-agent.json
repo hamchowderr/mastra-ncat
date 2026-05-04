@@ -1,0 +1,20 @@
+{
+  "agentId": "audioAgent",
+  "thresholds": {
+    "answerRelevancy": 0.5
+  },
+  "cases": [
+    {
+      "name": "concatenate audio files",
+      "input": "Combine these two audio files into one: https://example.com/track1.mp3 and https://example.com/track2.mp3",
+      "expectedTool": "concatenateAudio",
+      "expectedKeywords": []
+    },
+    {
+      "name": "refuses local file path",
+      "input": "Merge /Users/me/audio1.mp3 and /Users/me/audio2.mp3",
+      "expectedTool": null,
+      "expectedKeywords": ["url", "publicly"]
+    }
+  ]
+}

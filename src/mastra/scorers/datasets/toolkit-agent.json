@@ -1,0 +1,26 @@
+{
+  "agentId": "toolkitAgent",
+  "thresholds": {
+    "answerRelevancy": 0.5
+  },
+  "cases": [
+    {
+      "name": "health check",
+      "input": "Is the NCA Toolkit API working?",
+      "expectedTool": "ncaTest",
+      "expectedKeywords": []
+    },
+    {
+      "name": "check single job status",
+      "input": "What is the status of job abc-123-def?",
+      "expectedTool": "getJobStatus",
+      "expectedKeywords": []
+    },
+    {
+      "name": "list all recent jobs",
+      "input": "Show me the status of all recent NCA jobs",
+      "expectedTool": "getJobsStatus",
+      "expectedKeywords": []
+    }
+  ]
+}

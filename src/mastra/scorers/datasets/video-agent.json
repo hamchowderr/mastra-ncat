@@ -1,0 +1,32 @@
+{
+  "agentId": "videoAgent",
+  "thresholds": {
+    "answerRelevancy": 0.5
+  },
+  "cases": [
+    {
+      "name": "trim a video",
+      "input": "Trim this video to start at 10 seconds and end at 30 seconds: https://example.com/video.mp4",
+      "expectedTool": "trimVideo",
+      "expectedKeywords": []
+    },
+    {
+      "name": "concatenate videos",
+      "input": "Join these two videos together: https://example.com/clip1.mp4 and https://example.com/clip2.mp4",
+      "expectedTool": "concatenateVideos",
+      "expectedKeywords": []
+    },
+    {
+      "name": "extract thumbnail",
+      "input": "Get a thumbnail from this video at the 5 second mark: https://example.com/video.mp4",
+      "expectedTool": "videoThumbnail",
+      "expectedKeywords": []
+    },
+    {
+      "name": "refuses local file path",
+      "input": "Trim /Users/me/myvideo.mp4 to the first 30 seconds",
+      "expectedTool": null,
+      "expectedKeywords": ["url", "publicly"]
+    }
+  ]
+}
