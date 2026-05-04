@@ -81,7 +81,6 @@ Model string format: `anthropic/claude-haiku-4-5` (provider/model-id).
 
 Scorers:
 - `answerRelevancyScorer` is the only module-level scorer singleton (re-exported from `_example.scorers.ts`)
-- `createToolCallAccuracyScorerCode` requires `expectedTool` at construction time — it is per-case only, used in `eval.ts`, NOT as an agent-level scorer
 - Under AIMock (`USE_AIMOCK=true`), set `answerRelevancy` sampling rate to 0 — LLM-judged scorers can't be mocked usefully
 
 Tools used only by one agent can live in the agent file or in `src/mastra/tools/`. Shared tools always go in `src/mastra/tools/`.
@@ -96,7 +95,7 @@ Dataset files: `src/mastra/scorers/datasets/<agent-name>.json`.
 Dataset schema:
 ```json
 {
-  "agentId": "mediaProcessor",
+  "agentId": "videoAgent",
   "thresholds": { "answerRelevancy": 0.5 },
   "cases": [
     {
@@ -109,7 +108,20 @@ Dataset schema:
 }
 ```
 
-Minimum 5 cases: at least 1 positive tool call per major tool + 1 negative (refuses invalid input).
+Minimum 2 cases per domain agent: at least 1 positive tool call + 1 negative (refuses invalid input).
+
+**AIMock fixture format** for tool-call cases (two-turn):
+```json
+{ "match": { "userMessage": "...", "hasToolResult": false }, "response": { "toolCalls": [{ "name": "toolName", "arguments": { "url": "..." } }] } }
+{ "match": { "userMessage": "...", "hasToolResult": true  }, "response": { "content": "Done. Result at https://..." } }
+```
+
+For refusal cases (`expectedTool: null`), single-turn is sufficient:
+```json
+{ "match": { "userMessage": "..." }, "response": { "content": "I can't process local file paths..." } }
+```
+
+Each domain has its own fixture file in `fixtures/<domain>-agent.json`. Messages must be unique across all fixture files — AIMock loads the entire `fixtures/` directory and matches globally.
 
 `answerRelevancy` threshold is 0.5 (not 0.7) — LLM-judged relevancy scores technical tool outputs and refusals poorly even when behavior is correct.
 
@@ -148,7 +160,6 @@ Both require an explicit `id` field. `DuckDBStore` requires glibc — never run 
 - **Never add a new env var without updating `.env.example`**
 - **Never skip the Zod schema for a new env var** — process starts with undefined silently
 - **Never use `execute: async ({ context }) =>`** — Mastra passes input directly as first arg: `execute: async ({ mediaUrl, ... }) =>`
-- **Never register `createToolCallAccuracyScorerCode` as an agent-level scorer** — it requires `expectedTool` at construction time; use per-case in `eval.ts`
 - **Never import from `src/mastra/` in `src/lib/`** — circular dependency risk
 - **Never use barrel/index imports**
 
@@ -173,7 +184,7 @@ Stop and confirm before making these changes:
 npm run dev          # Start Studio at localhost:4111
 npm run typecheck    # Verify types before running
 npm run nca:ping     # Verify NCA is reachable (run before eval or after config change)
-npm run eval         # Run all eval cases; exits 0 on pass, 1 on fail
+npm run eval:all     # Run all 7 eval datasets; exits 0 on pass, 1 on fail
 npx supabase start   # Start local Supabase (Docker required)
 ```
 
