@@ -1,0 +1,38 @@
+{
+  "fixtures": [
+    {
+      "match": { "userMessage": "Please transcribe this media file for me: https://example.com/video.mp4" },
+      "response": {
+        "content": "I'll route this transcription request to the media agent. The transcription will be handled shortly."
+      }
+    },
+
+    {
+      "match": { "userMessage": "Trim this video to the first 30 seconds: https://example.com/video.mp4" },
+      "response": {
+        "content": "I'll route this trim request to the video agent. The video will be trimmed to the first 30 seconds."
+      }
+    },
+
+    {
+      "match": { "userMessage": "Can you grab a screenshot of https://example.com" },
+      "response": {
+        "content": "I'll route this screenshot request to the image agent. A screenshot of the page will be captured."
+      }
+    },
+
+    {
+      "match": { "userMessage": "Check that the NCA Toolkit API is healthy" },
+      "response": {
+        "content": "I'll route this health check to the toolkit agent. The API status will be verified."
+      }
+    },
+
+    {
+      "match": { "userMessage": "Transcribe the file at /home/user/recording.wav" },
+      "response": {
+        "content": "I can't process local file paths. All source media must be at publicly-accessible URLs. Please upload your file to cloud storage and provide a public URL."
+      }
+    }
+  ]
+}

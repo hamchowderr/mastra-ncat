@@ -1,0 +1,62 @@
+{
+  "fixtures": [
+    {
+      "match": { "userMessage": "Transcribe this video: https://example.com/video.mp4", "hasToolResult": false },
+      "response": {
+        "toolCalls": [{ "name": "transcribeMedia", "arguments": { "mediaUrl": "https://example.com/video.mp4" } }]
+      }
+    },
+    {
+      "match": { "userMessage": "Transcribe this video: https://example.com/video.mp4", "hasToolResult": true },
+      "response": {
+        "content": "I've transcribed the video. The transcript is: \"This is the mock transcript of the video.\""
+      }
+    },
+
+    {
+      "match": { "userMessage": "What are the technical details of this file? https://example.com/video.mp4", "hasToolResult": false },
+      "response": {
+        "toolCalls": [{ "name": "mediaMetadata", "arguments": { "mediaUrl": "https://example.com/video.mp4" } }]
+      }
+    },
+    {
+      "match": { "userMessage": "What are the technical details of this file? https://example.com/video.mp4", "hasToolResult": true },
+      "response": {
+        "content": "Here are the technical details: 1920x1080 MP4, duration 120 seconds, H.264 codec, 5000 kbps bitrate."
+      }
+    },
+
+    {
+      "match": { "userMessage": "Convert this video to MP3: https://example.com/video.mp4", "hasToolResult": false },
+      "response": {
+        "toolCalls": [{ "name": "convertToMp3", "arguments": { "mediaUrl": "https://example.com/video.mp4" } }]
+      }
+    },
+    {
+      "match": { "userMessage": "Convert this video to MP3: https://example.com/video.mp4", "hasToolResult": true },
+      "response": {
+        "content": "I've converted the video to MP3. The audio file is available at https://example.com/output.mp3"
+      }
+    },
+
+    {
+      "match": { "userMessage": "Find all the silent parts in this audio file: https://example.com/podcast.mp3", "hasToolResult": false },
+      "response": {
+        "toolCalls": [{ "name": "detectSilence", "arguments": { "mediaUrl": "https://example.com/podcast.mp3", "duration": 1.0 } }]
+      }
+    },
+    {
+      "match": { "userMessage": "Find all the silent parts in this audio file: https://example.com/podcast.mp3", "hasToolResult": true },
+      "response": {
+        "content": "I've detected silence in the audio. Found 3 silent intervals: 0.0-2.5s, 15.0-18.3s, 45.0-47.1s."
+      }
+    },
+
+    {
+      "match": { "userMessage": "Transcribe /Users/me/recording.m4a" },
+      "response": {
+        "content": "I can't process local file paths. All source media must be at publicly-accessible URLs. Please upload your file to cloud storage and provide a public URL."
+      }
+    }
+  ]
+}

@@ -4,10 +4,7 @@ import { resolve } from 'path';
 // Boot Mastra (env validation + AIMock + storage)
 import { mastra } from '../src/mastra/index';
 import { env } from '../src/lib/env';
-import {
-  createToolCallAccuracyScorerCode,
-  answerRelevancyScorer,
-} from '../src/mastra/scorers/_example.scorers';
+import { answerRelevancyScorer } from '../src/mastra/scorers/_example.scorers';
 
 // ── types ─────────────────────────────────────────────────────────────────────
 
@@ -115,16 +112,14 @@ for (const evalCase of dataset.cases) {
 
   const errors: string[] = [];
 
-  // Tool-call assertion — skipped under AIMock (text-only responses, no tool dispatch)
-  if (!env.USE_AIMOCK) {
-    if (evalCase.expectedTool === null) {
-      if (toolNames.length > 0) {
-        errors.push(`expected no tool call, but agent called: ${toolNames.join(', ')}`);
-      }
-    } else {
-      if (!toolNames.includes(evalCase.expectedTool)) {
-        errors.push(`expected tool "${evalCase.expectedTool}", got: [${toolNames.join(', ') || 'none'}]`);
-      }
+  // Tool-call assertion — always runs, including under AIMock
+  if (evalCase.expectedTool === null) {
+    if (toolNames.length > 0) {
+      errors.push(`expected no tool call, but agent called: ${toolNames.join(', ')}`);
+    }
+  } else {
+    if (!toolNames.includes(evalCase.expectedTool)) {
+      errors.push(`expected tool "${evalCase.expectedTool}", got: [${toolNames.join(', ') || 'none'}]`);
     }
   }
 
@@ -135,25 +130,9 @@ for (const evalCase of dataset.cases) {
     }
   }
 
-  // Per-case toolCallAccuracy scorer (requires expectedTool; skip for null)
+  // answerRelevancy scorer (LLM-judged; skip under AIMock)
   const scores: Record<string, number | null> = {};
 
-  if (evalCase.expectedTool !== null && !env.USE_AIMOCK && scoringInput !== undefined && scoringOutput !== undefined) {
-    try {
-      const toolScorer = createToolCallAccuracyScorerCode({
-        expectedTool: evalCase.expectedTool,
-      });
-      const toolResult = await toolScorer.run({
-        input: scoringInput as any,
-        output: scoringOutput as any,
-      });
-      scores.toolCallAccuracy = toolResult.score;
-    } catch (err) {
-      console.error(yellow(`\n    ⚠ toolCallAccuracy scorer error: ${err}`));
-    }
-  }
-
-  // answerRelevancy scorer (LLM-judged; skip under AIMock)
   if (!env.USE_AIMOCK && scoringInput !== undefined && scoringOutput !== undefined) {
     try {
       const relResult = await answerRelevancyScorer.run({

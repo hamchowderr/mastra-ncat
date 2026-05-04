@@ -1,0 +1,42 @@
+{
+  "fixtures": [
+    {
+      "match": { "userMessage": "Is the NCA Toolkit API working?", "hasToolResult": false },
+      "response": {
+        "toolCalls": [{ "name": "ncaTest", "arguments": {} }]
+      }
+    },
+    {
+      "match": { "userMessage": "Is the NCA Toolkit API working?", "hasToolResult": true },
+      "response": {
+        "content": "The NCA Toolkit API is working correctly. The API key is valid and storage is operational."
+      }
+    },
+
+    {
+      "match": { "userMessage": "What is the status of job abc-123-def?", "hasToolResult": false },
+      "response": {
+        "toolCalls": [{ "name": "getJobStatus", "arguments": { "jobId": "abc-123-def" } }]
+      }
+    },
+    {
+      "match": { "userMessage": "What is the status of job abc-123-def?", "hasToolResult": true },
+      "response": {
+        "content": "Job abc-123-def has completed successfully."
+      }
+    },
+
+    {
+      "match": { "userMessage": "Show me the status of all recent NCA jobs", "hasToolResult": false },
+      "response": {
+        "toolCalls": [{ "name": "getJobsStatus", "arguments": {} }]
+      }
+    },
+    {
+      "match": { "userMessage": "Show me the status of all recent NCA jobs", "hasToolResult": true },
+      "response": {
+        "content": "Here are the recent NCA jobs: mock-job-001 completed, mock-job-002 completed, mock-job-003 processing."
+      }
+    }
+  ]
+}

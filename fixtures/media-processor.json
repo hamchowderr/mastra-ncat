@@ -1,129 +1,61 @@
 {
   "fixtures": [
     {
-      "match": { "userMessage": "Transcribe this video for me: https://s1.aitable.ai/space/2025/02/22/e2519748ca31473495e2da671174bd57" },
+      "match": { "userMessage": "Transcribe this video for me: https://s1.aitable.ai/space/2025/02/22/e2519748ca31473495e2da671174bd57", "hasToolResult": false },
       "response": {
-        "content": "I'll transcribe that video for you. Starting transcription now. The transcription job has been queued with job_id: mock-job-001. I'll poll for the result. The transcription is complete: \"This is the mock transcript of the video.\""
+        "toolCalls": [{ "name": "transcribeMedia", "arguments": { "mediaUrl": "https://s1.aitable.ai/space/2025/02/22/e2519748ca31473495e2da671174bd57" } }]
       }
     },
     {
-      "match": { "userMessage": "Can you check if the NCA Toolkit is working?" },
+      "match": { "userMessage": "Transcribe this video for me: https://s1.aitable.ai/space/2025/02/22/e2519748ca31473495e2da671174bd57", "hasToolResult": true },
       "response": {
-        "content": "I'll check the NCA Toolkit now. The NCA Toolkit is working correctly. The test file is available and the API key is valid."
+        "content": "I've transcribed the video. The transcription is complete: \"This is the mock transcript of the video.\""
       }
     },
+
+    {
+      "match": { "userMessage": "Can you check if the NCA Toolkit is working?", "hasToolResult": false },
+      "response": {
+        "toolCalls": [{ "name": "ncaTest", "arguments": {} }]
+      }
+    },
+    {
+      "match": { "userMessage": "Can you check if the NCA Toolkit is working?", "hasToolResult": true },
+      "response": {
+        "content": "The NCA Toolkit is working correctly. The API key is valid and the deployment is reachable."
+      }
+    },
+
     {
       "match": { "userMessage": "Transcribe /Users/me/recording.m4a" },
       "response": {
         "content": "I can't process local file paths. All source media must be at publicly-accessible URLs. Please upload your file to cloud storage and provide a public URL."
       }
     },
+
     {
-      "match": { "userMessage": "Check the status of job abc-123-def" },
+      "match": { "userMessage": "Check the status of job abc-123-def", "hasToolResult": false },
       "response": {
-        "content": "I'll check the status of job abc-123-def right away. The job is currently queued and processing."
+        "toolCalls": [{ "name": "getJobStatus", "arguments": { "jobId": "abc-123-def" } }]
       }
     },
     {
-      "match": { "userMessage": "Add captions to https://s1.aitable.ai/space/2025/02/22/e2519748ca31473495e2da671174bd57 using this SRT:" },
+      "match": { "userMessage": "Check the status of job abc-123-def", "hasToolResult": true },
       "response": {
-        "content": "I'll add captions to that video now. The captioning job has been queued with job_id: mock-job-002. I'll poll for the result once it completes."
+        "content": "I've checked the status of job abc-123-def. The job is currently completed successfully."
+      }
+    },
+
+    {
+      "match": { "userMessage": "Add captions to https://s1.aitable.ai/space/2025/02/22/e2519748ca31473495e2da671174bd57 using this SRT: 1\n00:00:00,000 --> 00:00:05,000\nHello world", "hasToolResult": false },
+      "response": {
+        "toolCalls": [{ "name": "captionVideo", "arguments": { "videoUrl": "https://s1.aitable.ai/space/2025/02/22/e2519748ca31473495e2da671174bd57", "captions": "1\n00:00:00,000 --> 00:00:05,000\nHello world" } }]
       }
     },
     {
-      "match": { "userMessage": "Trim this video to start at 10 seconds and end at 30 seconds" },
+      "match": { "userMessage": "Add captions to https://s1.aitable.ai/space/2025/02/22/e2519748ca31473495e2da671174bd57 using this SRT: 1\n00:00:00,000 --> 00:00:05,000\nHello world", "hasToolResult": true },
       "response": {
-        "content": "I'll trim that video for you. The trim job has been queued with job_id: mock-job-010. The video has been trimmed successfully and is available at https://example.com/trimmed.mp4"
-      }
-    },
-    {
-      "match": { "userMessage": "Join these two videos together" },
-      "response": {
-        "content": "I'll concatenate those videos. The concatenation job has been queued with job_id: mock-job-011. The videos have been joined and the result is available at https://example.com/combined.mp4"
-      }
-    },
-    {
-      "match": { "userMessage": "Get a thumbnail from this video at the 5 second mark" },
-      "response": {
-        "content": "I'll extract a thumbnail at the 5 second mark. The thumbnail job has been queued with job_id: mock-job-012. The thumbnail is available at https://example.com/thumbnail.jpg"
-      }
-    },
-    {
-      "match": { "userMessage": "Trim /Users/me/myvideo.mp4" },
-      "response": {
-        "content": "I can't process local file paths. All source media must be at publicly-accessible URLs. Please upload your file to cloud storage and provide a public URL."
-      }
-    },
-    {
-      "match": { "userMessage": "Combine these two audio files into one" },
-      "response": {
-        "content": "I'll combine those audio files. The concatenation job has been queued with job_id: mock-job-020. The merged audio is available at https://example.com/merged.mp3"
-      }
-    },
-    {
-      "match": { "userMessage": "Merge /Users/me/audio1.mp3" },
-      "response": {
-        "content": "I can't process local file paths. All source media must be at publicly-accessible URLs. Please upload your file to cloud storage and provide a public URL."
-      }
-    },
-    {
-      "match": { "userMessage": "Transcribe this video: https://example.com/video.mp4" },
-      "response": {
-        "content": "I'll transcribe that video for you. The transcription job has been queued with job_id: mock-job-030. The transcription is complete: \"This is the mock transcript.\""
-      }
-    },
-    {
-      "match": { "userMessage": "What are the technical details of this file?" },
-      "response": {
-        "content": "I'll retrieve the metadata for that file. The metadata job has been queued with job_id: mock-job-031. The file is a 1920x1080 MP4 video, duration 120 seconds, H.264 codec, 5000 kbps bitrate."
-      }
-    },
-    {
-      "match": { "userMessage": "Convert this video to MP3" },
-      "response": {
-        "content": "I'll convert that video to MP3. The conversion job has been queued with job_id: mock-job-032. The MP3 file is available at https://example.com/output.mp3"
-      }
-    },
-    {
-      "match": { "userMessage": "Find all the silent parts in this audio file" },
-      "response": {
-        "content": "I'll detect silence in that audio file. The silence detection job has been queued with job_id: mock-job-033. Found 3 silent intervals: 0.0-2.5s, 15.0-18.3s, 45.0-47.1s."
-      }
-    },
-    {
-      "match": { "userMessage": "Take a screenshot of https://example.com" },
-      "response": {
-        "content": "I'll capture a screenshot of that webpage. The screenshot job has been queued with job_id: mock-job-040. The screenshot is available at https://example.com/screenshot.png"
-      }
-    },
-    {
-      "match": { "userMessage": "Turn this image into a video with a zoom effect" },
-      "response": {
-        "content": "I'll convert that image to a video with a Ken Burns zoom effect. The conversion job has been queued with job_id: mock-job-041. The video is available at https://example.com/output.mp4"
-      }
-    },
-    {
-      "match": { "userMessage": "Is the NCA Toolkit API working?" },
-      "response": {
-        "content": "I'll check the NCA Toolkit API health now. The NCA Toolkit is working correctly and the API key is valid."
-      }
-    },
-    {
-      "match": { "userMessage": "What is the status of job abc-123-def?" },
-      "response": {
-        "content": "I'll check the status of job abc-123-def. The job is currently completed successfully."
-      }
-    },
-    {
-      "match": { "userMessage": "Show me the status of all recent NCA jobs" },
-      "response": {
-        "content": "I'll retrieve the status of all recent NCA jobs. Here are the recent jobs: mock-job-001: completed, mock-job-002: completed, mock-job-003: processing."
-      }
-    },
-    {
-      "match": { "userMessage": "Trim this video to the first 30 seconds" },
-      "response": {
-        "content": "I'll delegate this video trim request to the video agent. The video has been trimmed to the first 30 seconds and is available at https://example.com/trimmed.mp4"
+        "content": "I've added captions to the video. The captioned video is available at https://example.com/captioned.mp4"
       }
     }
   ]

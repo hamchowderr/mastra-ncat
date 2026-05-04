@@ -1,0 +1,29 @@
+{
+  "fixtures": [
+    {
+      "match": { "userMessage": "Take a screenshot of https://example.com", "hasToolResult": false },
+      "response": {
+        "toolCalls": [{ "name": "screenshotWebpage", "arguments": { "url": "https://example.com" } }]
+      }
+    },
+    {
+      "match": { "userMessage": "Take a screenshot of https://example.com", "hasToolResult": true },
+      "response": {
+        "content": "I've captured a screenshot of the webpage. The screenshot is available at https://example.com/screenshot.png"
+      }
+    },
+
+    {
+      "match": { "userMessage": "Turn this image into a video with a zoom effect: https://example.com/photo.jpg", "hasToolResult": false },
+      "response": {
+        "toolCalls": [{ "name": "imageToVideo", "arguments": { "imageUrl": "https://example.com/photo.jpg" } }]
+      }
+    },
+    {
+      "match": { "userMessage": "Turn this image into a video with a zoom effect: https://example.com/photo.jpg", "hasToolResult": true },
+      "response": {
+        "content": "I've converted the image to a video with a Ken Burns zoom effect. The video is available at https://example.com/output.mp4"
+      }
+    }
+  ]
+}

@@ -1,0 +1,49 @@
+{
+  "fixtures": [
+    {
+      "match": { "userMessage": "Trim this video to start at 10 seconds and end at 30 seconds: https://example.com/video.mp4", "hasToolResult": false },
+      "response": {
+        "toolCalls": [{ "name": "trimVideo", "arguments": { "videoUrl": "https://example.com/video.mp4", "start": "00:00:10", "end": "00:00:30" } }]
+      }
+    },
+    {
+      "match": { "userMessage": "Trim this video to start at 10 seconds and end at 30 seconds: https://example.com/video.mp4", "hasToolResult": true },
+      "response": {
+        "content": "I've trimmed the video from 10 to 30 seconds. The trimmed video is available at https://example.com/trimmed.mp4"
+      }
+    },
+
+    {
+      "match": { "userMessage": "Join these two videos together: https://example.com/clip1.mp4 and https://example.com/clip2.mp4", "hasToolResult": false },
+      "response": {
+        "toolCalls": [{ "name": "concatenateVideos", "arguments": { "videoUrls": ["https://example.com/clip1.mp4", "https://example.com/clip2.mp4"] } }]
+      }
+    },
+    {
+      "match": { "userMessage": "Join these two videos together: https://example.com/clip1.mp4 and https://example.com/clip2.mp4", "hasToolResult": true },
+      "response": {
+        "content": "I've joined the two videos. The combined video is available at https://example.com/combined.mp4"
+      }
+    },
+
+    {
+      "match": { "userMessage": "Get a thumbnail from this video at the 5 second mark: https://example.com/video.mp4", "hasToolResult": false },
+      "response": {
+        "toolCalls": [{ "name": "videoThumbnail", "arguments": { "videoUrl": "https://example.com/video.mp4", "second": 5 } }]
+      }
+    },
+    {
+      "match": { "userMessage": "Get a thumbnail from this video at the 5 second mark: https://example.com/video.mp4", "hasToolResult": true },
+      "response": {
+        "content": "I've extracted the thumbnail at the 5 second mark. The thumbnail is available at https://example.com/thumbnail.jpg"
+      }
+    },
+
+    {
+      "match": { "userMessage": "Trim /Users/me/myvideo.mp4 to the first 30 seconds" },
+      "response": {
+        "content": "I can't process local file paths. All source media must be at publicly-accessible URLs. Please upload your file to cloud storage and provide a public URL."
+      }
+    }
+  ]
+}

@@ -6,7 +6,7 @@
   "cases": [
     {
       "name": "routes transcription to mediaAgent",
-      "input": "Transcribe this video: https://example.com/video.mp4",
+      "input": "Please transcribe this media file for me: https://example.com/video.mp4",
       "expectedTool": null,
       "expectedKeywords": ["transcri"]
     },
@@ -18,19 +18,19 @@
     },
     {
       "name": "routes screenshot to imageAgent",
-      "input": "Take a screenshot of https://example.com",
-      "expectedTool": null,
-      "expectedKeywords": ["screenshot"]
+      "input": "Can you grab a screenshot of https://example.com",
+      "expectedKeywords": ["screenshot"],
+      "expectedTool": null
     },
     {
       "name": "routes health check to toolkitAgent",
-      "input": "Is the NCA Toolkit API working?",
+      "input": "Check that the NCA Toolkit API is healthy",
       "expectedTool": null,
-      "expectedKeywords": ["working", "api", "toolkit"]
+      "expectedKeywords": ["api", "toolkit"]
     },
     {
       "name": "refuses local file path",
-      "input": "Transcribe /Users/me/recording.m4a",
+      "input": "Transcribe the file at /home/user/recording.wav",
       "expectedTool": null,
       "expectedKeywords": ["url", "publicly"]
     }

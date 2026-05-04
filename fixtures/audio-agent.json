@@ -1,0 +1,23 @@
+{
+  "fixtures": [
+    {
+      "match": { "userMessage": "Combine these two audio files into one: https://example.com/track1.mp3 and https://example.com/track2.mp3", "hasToolResult": false },
+      "response": {
+        "toolCalls": [{ "name": "concatenateAudio", "arguments": { "audioUrls": ["https://example.com/track1.mp3", "https://example.com/track2.mp3"] } }]
+      }
+    },
+    {
+      "match": { "userMessage": "Combine these two audio files into one: https://example.com/track1.mp3 and https://example.com/track2.mp3", "hasToolResult": true },
+      "response": {
+        "content": "I've combined the two audio files. The merged audio is available at https://example.com/merged.mp3"
+      }
+    },
+
+    {
+      "match": { "userMessage": "Merge /Users/me/audio1.mp3 and /Users/me/audio2.mp3" },
+      "response": {
+        "content": "I can't process local file paths. All source media must be at publicly-accessible URLs. Please upload your files to cloud storage and provide public URLs."
+      }
+    }
+  ]
+}
