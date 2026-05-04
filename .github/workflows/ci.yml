@@ -86,7 +86,7 @@ jobs:
       - name: Create empty .env for CI
         run: touch .env
       - name: Run eval gate
-        run: npm run eval
+        run: npm run eval:all
         env:
           USE_AIMOCK: 'true'
           AIMOCK_URL: http://127.0.0.1:4010
