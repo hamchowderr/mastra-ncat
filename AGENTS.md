@@ -127,13 +127,44 @@ Each domain has its own fixture file in `fixtures/<domain>-agent.json`. Messages
 
 ---
 
+## Reachability Conventions
+
+Every agent registered in `Mastra({ agents: { ... } })` is reachable through four protocols at runtime:
+
+| Protocol | Path pattern | Notes |
+|---|---|---|
+| REST | `POST /api/agents/{agentId}/generate` | Use `/stream` for streaming |
+| A2A card | `GET /api/.well-known/{agentId}/agent-card.json` | Agent metadata |
+| A2A execute | `POST /api/a2a/{agentId}` | JSON-RPC `message/send` |
+| MCP | `POST /api/mcp/{mcpServerId}/mcp` | Session-based; `initialize` before `tools/list` |
+| Studio + Editor | `http://localhost:4111` | Browser UI |
+
+The MCP URL uses the `id` field from the `MCPServer` constructor, not the key in `mcpServers: {}`. For this template, the MCP endpoint is `/api/mcp/nca-mcp/mcp`.
+
+MCP is session-based. Send `initialize` first; the response includes an `mcp-session-id` header. Pass that header in every subsequent request (`tools/list`, tool invocations). Without it, `tools/list` returns an empty array — not an error, just silently wrong.
+
+Every agent in the `agents` map must also appear in the `MCPServer({ agents: { ... } })` constructor to be reachable via MCP. Every agent registered with MCPServer must have a non-empty `description` field or the server will throw at boot.
+
+---
+
+## NCA Template Specifics
+
+The `src/mastra/lib/nca.ts` file is the working HTTP client for the NCA Toolkit. Do not refactor it without testing all tool wrappers end-to-end. The client handles auth, retries, the Content-Type-only-on-POST rule, and the `/v1/toolkit/job/status` endpoint quirks (POST with body, not GET with path param).
+
+This template has seven agents (`mediaProcessor`, `mediaSupervisor`, `videoAgent`, `audioAgent`, `mediaAgent`, `imageAgent`, `toolkitAgent`). All are registered with the MCPServer. When adding an eighth agent, register it in BOTH the `agents` field of the Mastra constructor AND the `agents` field of the MCPServer instance, and ensure it has a non-empty `description` property.
+
+The async polling pattern (`getJobStatus` tool) is the canonical pattern for any NCA endpoint that returns a `job_id`. Reuse it in new tools rather than inventing a new pattern.
+
+---
+
 ## Storage
 
 The Mastra instance uses a composite store:
 - **default domain** → `PostgresStore` (Supabase Postgres via `SUPABASE_DB_URL`)
+- **editor domain** → `PostgresStore` (same Supabase DB, separate `id: 'mastra-editor-storage'`)
 - **observability domain** → `DuckDBStore`
 
-Both require an explicit `id` field. `DuckDBStore` requires glibc — never run in Alpine.
+All stores require an explicit `id` field. `DuckDBStore` requires glibc — never run in Alpine.
 
 ---
 

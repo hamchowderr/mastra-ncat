@@ -37,6 +37,7 @@ import { env } from '../../lib/env';
 export const mediaProcessorAgent = new Agent({
   id: 'mediaProcessor',
   name: 'Media Processor',
+  description: 'General-purpose NCA media processor. Routes media tasks across NCA Toolkit endpoints (transcription, captioning, ffmpeg compose, job polling). Reference implementation for the family.',
   instructions: `You process media files (video, audio) by calling NCA Toolkit tools.
 
 Available operations:

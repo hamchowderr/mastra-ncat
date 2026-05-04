@@ -38,16 +38,18 @@ Expected: supervisor delegates to `mediaAgent`, which calls `transcribeMedia`, a
 
 ## Reachability
 
-This template's agents are reachable through four standard protocols. Once the dev server is running (`npm run dev`), every registered agent can be called via:
+Once the dev server is running (`npm run dev`), all seven agents in this template are reachable through four standard paths.
+
+The agents are: `mediaProcessor`, `mediaSupervisor`, `videoAgent`, `audioAgent`, `mediaAgent`, `imageAgent`, `toolkitAgent`. Examples below use `mediaProcessor` — swap the agentId in the URL to address any of the others.
 
 ### REST API
 
 Direct HTTP calls. The fastest path for n8n, Make, VAPI, LiveKit, or any HTTP-aware system.
 
 ```bash
-curl -X POST http://localhost:4111/api/agents/mediaSupervisor/generate \
+curl -X POST http://localhost:4111/api/agents/mediaProcessor/generate \
   -H "Content-Type: application/json" \
-  -d '{"messages":[{"role":"user","content":"Transcribe this video: https://example.com/sample.mp4"}]}'
+  -d '{"messages":[{"role":"user","content":"Run an NCA health check"}]}'
 ```
 
 For streaming responses, use `/stream` instead of `/generate`. Full OpenAPI spec at `/api/openapi.json`. Interactive docs at `/swagger-ui` (dev only).
@@ -58,13 +60,13 @@ Google's open standard for agent-to-agent communication. JSON-RPC over HTTP.
 
 ```bash
 # Get agent card
-curl http://localhost:4111/api/.well-known/mediaSupervisor/agent-card.json
+curl http://localhost:4111/api/.well-known/mediaProcessor/agent-card.json
 
 # Send a message (JSON-RPC)
-curl -X POST http://localhost:4111/api/a2a/mediaSupervisor \
+curl -X POST http://localhost:4111/api/a2a/mediaProcessor \
   -H "Content-Type: application/json" \
   -H "Accept: application/json, text/event-stream" \
-  -d '{"jsonrpc":"2.0","id":"1","method":"message/send","params":{"message":{"kind":"message","messageId":"msg-1","role":"user","parts":[{"kind":"text","text":"Transcribe this video: https://example.com/sample.mp4"}]}}}'
+  -d '{"jsonrpc":"2.0","id":"1","method":"message/send","params":{"message":{"kind":"message","messageId":"msg-1","role":"user","parts":[{"kind":"text","text":"Run an NCA health check"}]}}}'
 ```
 
 Use this when another agent (in CrewAI, LangGraph, ADK, or any A2A-compatible framework) needs to delegate media processing work to this template.
@@ -85,7 +87,25 @@ To use from Claude Desktop, add to your `claude_desktop_config.json`:
 }
 ```
 
-Each agent appears as a tool named `ask_<agentId>`. Useful during development (call your own agent from your IDE) and for cross-system integration.
+All seven agents appear as tools: `ask_mediaProcessor`, `ask_mediaSupervisor`, `ask_videoAgent`, `ask_audioAgent`, `ask_mediaAgent`, `ask_imageAgent`, `ask_toolkitAgent`. Note the URL uses the MCPServer `id` field (`nca-mcp`), not the config key in `src/mastra/index.ts` (`ncaMcp`).
+
+**Testing MCP via curl**: The protocol is session-based — you must send `initialize` first and pass the returned `mcp-session-id` header in all subsequent calls. Omitting the session header causes `tools/list` to return an empty list.
+
+```bash
+# Step 1: initialize and capture session ID
+SESSION=$(curl -si -X POST http://localhost:4111/api/mcp/nca-mcp/mcp \
+  -H "Content-Type: application/json" \
+  -H "Accept: application/json, text/event-stream" \
+  -d '{"jsonrpc":"2.0","method":"initialize","id":1,"params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"test","version":"1.0.0"}}}' \
+  | grep -i "mcp-session-id" | tr -d '\r' | awk '{print $2}')
+
+# Step 2: list tools (pass session ID)
+curl -s -X POST http://localhost:4111/api/mcp/nca-mcp/mcp \
+  -H "Content-Type: application/json" \
+  -H "Accept: application/json, text/event-stream" \
+  -H "mcp-session-id: $SESSION" \
+  -d '{"jsonrpc":"2.0","method":"tools/list","id":2}'
+```
 
 ### Studio (visual UI + Editor)
 

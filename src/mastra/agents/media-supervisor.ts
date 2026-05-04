@@ -12,6 +12,7 @@ import { env } from '../../lib/env';
 export const mediaSupervisorAgent = new Agent({
   id: 'mediaSupervisor',
   name: 'Media Supervisor',
+  description: 'Coordinates multi-step NCA workflows by delegating to specialist agents (video, audio, media, image, toolkit). Use for complex media pipelines that span multiple endpoint categories.',
   instructions: `You coordinate media processing tasks by delegating to domain-specific agents.
 
 Available agents:

@@ -103,3 +103,39 @@
 - Test 8 (Docker build & run): `docker build -t template-mastra-nca:test .` → exit 0; `docker run` with `host.docker.internal` DB URL → /health returns {"success":true} ✓
   - Note: `docker compose up` reads `env_file` which overrides shell env prefix; use `docker run -e` to override SUPABASE_DB_URL for local testing
   - Note: local Supabase runs on 127.0.0.1:54322 — Docker containers must use host.docker.internal:54322 (documented in README)
+
+## NCA Polish 03: Verify + Document Reachability ✅
+- Status: complete
+- Endpoints verified:
+  - REST (POST /api/agents/mediaProcessor/generate): pass — HTTP 200
+  - A2A card (GET /api/.well-known/mediaProcessor/agent-card.json): pass — HTTP 200
+  - A2A execute (POST /api/a2a/mediaProcessor): pass — HTTP 200
+  - MCP (POST /api/mcp/nca-mcp/mcp) initialize: pass — HTTP 200, serverInfo name=template-mastra-nca
+  - MCP tools/list (with mcp-session-id header): pass — 7 tools listed: ask_mediaProcessor, ask_mediaSupervisor, ask_videoAgent, ask_audioAgent, ask_mediaAgent, ask_imageAgent, ask_toolkitAgent
+  - Studio + Editor: pass — dev server up at localhost:4111 (port 4111 after killing stale DuckDB lock on PID 17720)
+  - NCA regression check: not run live (NCA container state unknown); REST endpoint returned 200 confirming agent routing is intact
+- README updated: Reachability section now lists all 7 agents by name, uses mediaProcessor as example, lists all 7 ask_* tools in MCP section, adds note about nca-mcp id vs ncaMcp config key
+- AGENTS.md updated: added "Reachability Conventions" section (protocol table, MCP session note, MCPServer registration rule) and "NCA Template Specifics" section (nca.ts warning, 7-agent count, polling pattern canonical); Storage section updated to include editor domain
+- Note: MCP requires session — initialize call returns mcp-session-id header; must pass it in tools/list and subsequent calls
+
+## NCA Polish 02: Configure MCPServer + MastraEditor ✅
+- Status: complete
+- Agent descriptions:
+  - mediaProcessor: added — 'General-purpose NCA media processor. Routes media tasks across NCA Toolkit endpoints (transcription, captioning, ffmpeg compose, job polling). Reference implementation for the family.'
+  - mediaSupervisor: added — 'Coordinates multi-step NCA workflows by delegating to specialist agents (video, audio, media, image, toolkit). Use for complex media pipelines that span multiple endpoint categories.'
+  - videoAgent: existing — 'Handles all video operations: captioning, trimming, concatenating, cutting segments, splitting, and thumbnail extraction.'
+  - audioAgent: existing — 'Handles audio operations: joining multiple audio files into a single track.'
+  - mediaAgent: existing — 'Handles generic media operations on audio or video: transcription, ffmpeg composition, cutting segments, ASS subtitle generation, metadata extraction, silence detection, and format conversion.'
+  - imageAgent: existing — 'Handles image operations: capturing webpage screenshots and converting static images to video with Ken Burns effect.'
+  - toolkitAgent: existing — 'Handles NCA Toolkit utility operations: health checks, polling a single job by ID, and listing statuses of all recent jobs.'
+- Imports added: MastraEditor from @mastra/editor, MCPServer from @mastra/mcp
+- Configuration: MCPServer (id: nca-mcp, tools: {}, all 7 agents) registered as mcpServers.ncaMcp; editor: new MastraEditor() added to Mastra constructor
+- nca.ts HTTP client untouched: confirmed
+- Verification: typecheck passes (zero errors); dev boot pending (Step 03)
+
+## NCA Polish 01: Install Packages + Editor Storage ✅
+- Status: complete
+- Installed: @mastra/editor@0.7.22, @mastra/mcp@1.6.0
+- File changed: src/mastra/index.ts (added `editor` as top-level field on MastraCompositeStore, sibling of `default` and `domains`)
+- nca.ts HTTP client untouched: confirmed
+- Verification: `npm run typecheck` passes (zero errors)

@@ -18,6 +18,8 @@ import { PostgresStore } from '@mastra/pg';
 import { DuckDBStore } from '@mastra/duckdb';
 import { MastraCompositeStore } from '@mastra/core/storage';
 import { Observability, DefaultExporter, SensitiveDataFilter } from '@mastra/observability';
+import { MastraEditor } from '@mastra/editor';
+import { MCPServer } from '@mastra/mcp';
 
 import { mediaProcessorAgent } from './agents/_example';
 import { mediaSupervisorAgent } from './agents/media-supervisor';
@@ -27,6 +29,23 @@ import { mediaAgent } from './agents/media-agent';
 import { imageAgent } from './agents/image-agent';
 import { toolkitAgent } from './agents/toolkit-agent';
 import { answerRelevancyScorer } from './scorers/_example.scorers';
+
+const mcpServer = new MCPServer({
+  id: 'nca-mcp',
+  name: 'template-mastra-nca',
+  version: '0.1.0',
+  description: 'MCP server exposing template-mastra-nca agents (NCA Toolkit media processing) as tools',
+  tools: {},
+  agents: {
+    mediaProcessor: mediaProcessorAgent,
+    mediaSupervisor: mediaSupervisorAgent,
+    videoAgent,
+    audioAgent,
+    mediaAgent,
+    imageAgent,
+    toolkitAgent,
+  },
+});
 
 export const mastra = new Mastra({
   agents: {
@@ -39,9 +58,11 @@ export const mastra = new Mastra({
     toolkitAgent,
   },
   scorers: { answerRelevancyScorer },
+  mcpServers: { ncaMcp: mcpServer },
   storage: new MastraCompositeStore({
     id: 'composite-storage',
     default: new PostgresStore({ id: 'mastra-storage', connectionString: env.SUPABASE_DB_URL }),
+    editor: new PostgresStore({ id: 'mastra-editor-storage', connectionString: env.SUPABASE_DB_URL }),
     domains: {
       observability: await new DuckDBStore().getStore('observability'),
     },
@@ -59,4 +80,5 @@ export const mastra = new Mastra({
       },
     },
   }),
+  editor: new MastraEditor(),
 });
