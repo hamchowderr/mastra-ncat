@@ -2,6 +2,7 @@ import { Agent } from '@mastra/core/agent';
 import { ncaTest } from '../tools/nca-test';
 import { getJobStatus } from '../tools/get-job-status';
 import { getJobsStatus } from '../tools/get-jobs-status';
+import { defaultInputProcessors, defaultOutputProcessors } from '../lib/processors';
 
 export const toolkitAgent = new Agent({
   id: 'toolkitAgent',
@@ -9,6 +10,8 @@ export const toolkitAgent = new Agent({
   description: 'Handles NCA Toolkit utility operations: health checks, polling a single job by ID, and listing statuses of all recent jobs.',
   model: 'anthropic/claude-haiku-4-5',
   tools: { ncaTest, getJobStatus, getJobsStatus },
+  inputProcessors: defaultInputProcessors,
+  outputProcessors: defaultOutputProcessors,
   instructions: `You handle NCA Toolkit utility tasks.
 
 Available operations:

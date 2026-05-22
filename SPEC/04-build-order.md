@@ -92,16 +92,18 @@ Don't proceed until ping passes — every subsequent phase depends on NCA being 
 
 ## Phase 5: Tools
 
-Write the 5 tool files in any order:
-- `src/mastra/tools/nca-test.ts`
-- `src/mastra/tools/caption-video.ts`
-- `src/mastra/tools/transcribe-media.ts`
-- `src/mastra/tools/ffmpeg-compose.ts`
-- `src/mastra/tools/get-job-status.ts`
+Write all **20 tool files** in any order — each is a thin `createTool` over one NCA endpoint, routed through `ncaRequest`. Start with the five detailed in `03-files.md` (they're the reference implementations), then build the rest by copying the closest one (see the full table in `03-files.md` § Remaining NCA tools):
+
+- **Toolkit**: `nca-test.ts`, `get-job-status.ts`, `get-jobs-status.ts`
+- **Video**: `caption-video.ts`, `trim-video.ts`, `cut-video.ts`, `split-video.ts`, `concatenate-videos.ts`, `video-thumbnail.ts`
+- **Audio**: `concatenate-audio.ts`
+- **Media (generic)**: `transcribe-media.ts`, `cut-media.ts`, `convert-media.ts`, `convert-to-mp3.ts`, `media-metadata.ts`, `detect-silence.ts`, `generate-ass.ts`
+- **Image**: `screenshot-webpage.ts`, `image-to-video.ts`
+- **Compose**: `ffmpeg-compose.ts`
 
 Per spec.
 
-**Checkpoint**: typecheck passes for each. No tool calls `fetch` directly — all go through `ncaRequest`.
+**Checkpoint**: typecheck passes for each of the 20. No tool calls `fetch` directly — all go through `ncaRequest`.
 
 ## Phase 6: Scorers
 
@@ -109,15 +111,24 @@ Write `src/mastra/scorers/_example.scorers.ts` per spec. Verify exact prebuilt n
 
 **Checkpoint**: typecheck passes.
 
-## Phase 7: Media processor agent
+## Phase 7: Agents (mediaProcessor + supervisor fleet)
 
-1. Write `src/mastra/agents/_example.ts` per spec.
-2. Update `src/mastra/index.ts` to register the agent + scorers, with optional health check at boot.
+The degit fork in Phase 0 brings `src/mastra/lib/processors.ts` and `src/mastra/lib/memory.ts` over from base — no need to write them. Use them, don't re-create them.
+
+Build order matters: sub-agents first (the supervisor imports them), then the supervisor.
+
+1. Write `src/mastra/agents/_example.ts` (`mediaProcessor`) per spec — `memory: createDefaultMemory()` + shared `inputProcessors` / `outputProcessors`. Do NOT use bare `new Memory()`.
+2. Write the 5 sub-agents — `video-agent.ts`, `audio-agent.ts`, `media-agent.ts`, `image-agent.ts`, `toolkit-agent.ts` — each per spec: its tool group + `getJobStatus`, the shared `inputProcessors` / `outputProcessors`, and **no `memory`** (stateless).
+3. Write `src/mastra/agents/media-supervisor.ts` (`mediaSupervisor`) per spec — imports the 5 sub-agents and passes them via `agents: {...}`, plus `createDefaultMemory()` + shared processors.
+4. Update `src/mastra/index.ts` to register all 7 agents + scorers, with optional health check at boot.
+
+**Memory rule** (apply to any agent you add): conversational/top-level agents (`mediaProcessor`, `mediaSupervisor`) get `createDefaultMemory()`; delegated tool-agents (the 5 sub-agents) get the shared processors but stay **stateless** — the supervisor owns the conversation.
 
 **Checkpoint**:
 - typecheck passes
 - `npm run dev` boots Studio without errors
-- `mediaProcessor` agent visible in Studio
+- All 7 agents visible in Studio (`mediaProcessor`, `mediaSupervisor`, and the 5 sub-agents)
+- Chatting with `mediaSupervisor` delegates: a video request reaches `videoAgent`, a health check reaches `toolkitAgent`
 
 ## Phase 8: Live smoke tests
 

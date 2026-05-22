@@ -238,6 +238,91 @@ function sleep(ms: number): Promise<void> {
 
 ---
 
+## `src/mastra/lib/processors.ts` (from base)
+
+**Purpose**: One shared input/output processor baseline every agent spreads in (incl. the sub-agents), so the whole fleet has the same safety/hygiene layer instead of each agent reinventing it.
+
+**Design rule (do not relitigate)**: only the two **deterministic, no-LLM** processors are active by default — `UnicodeNormalizer` (input) and `TokenLimiter` (output). The five model-backed safety processors (`ModerationProcessor`, `PromptInjectionDetector`, `PIIDetector`, `LanguageDetector`, `SystemPromptScrubber`) each construct their own agent and make their own LLM call; enabling all of them turns one request into ~6 sequential LLM calls. They — plus behavior-changing ones (`ToolCallFilter`, `StructuredOutputProcessor`, `BatchPartsProcessor`) — ship **present-but-commented** as opt-in, with a one-line rationale each. Do not enable them by default.
+
+**Implementation**:
+
+```typescript
+import type { InputProcessorOrWorkflow, OutputProcessorOrWorkflow } from '@mastra/core/processors';
+import { UnicodeNormalizer, TokenLimiter } from '@mastra/core/processors';
+
+export const DEFAULT_OUTPUT_TOKEN_LIMIT = 8000;
+
+export const defaultInputProcessors: InputProcessorOrWorkflow[] = [
+  new UnicodeNormalizer({ stripControlChars: true, collapseWhitespace: true }),
+  // OPT-IN (each = one extra LLM call), uncomment + add a model to enable:
+  // new PromptInjectionDetector({ model: 'anthropic/claude-haiku-4-5' }),
+  // new ModerationProcessor({ model: 'anthropic/claude-haiku-4-5' }),
+  // new PIIDetector({ model: 'anthropic/claude-haiku-4-5', strategy: 'redact' }),
+];
+
+export const defaultOutputProcessors: OutputProcessorOrWorkflow[] = [
+  new TokenLimiter({ limit: DEFAULT_OUTPUT_TOKEN_LIMIT, strategy: 'truncate' }),
+  // OPT-IN:
+  // new SystemPromptScrubber({ model: 'anthropic/claude-haiku-4-5' }),
+  // new ToolCallFilter({ exclude: [] }),
+];
+```
+
+(See the actual file for the full commented opt-in list and the file-header rationale.)
+
+**Acceptance criteria**:
+- Typecheck passes; both arrays export with the correct `InputProcessorOrWorkflow[]` / `OutputProcessorOrWorkflow[]` types.
+- Only `UnicodeNormalizer` and `TokenLimiter` are active; everything else is commented.
+- Spread into ALL agents (mediaProcessor, supervisor, and the 5 sub-agents).
+- These are NOT memory processors — adding them does not suppress Mastra's auto-added `MessageHistory` / `WorkingMemory` processors.
+
+---
+
+## `src/mastra/lib/memory.ts` (from base)
+
+**Purpose**: One shared `Memory` factory so every agent that has memory uses the same policy. In ncat: used by `mediaProcessorAgent` and `mediaSupervisorAgent`; the 5 sub-agents are stateless and do NOT call it.
+
+**Design rule (do not relitigate)**: working memory **ON**, `scope: 'resource'` (persists per user across threads). Semantic recall **OFF** — it adds an embed + vector-query per turn and needs a `vector` store + `embedder` this template doesn't configure. Pass no `storage` — Memory inherits the Mastra instance's `PostgresStore` (Supabase), which supports the `mastra_resources` table resource-scoping requires.
+
+**Implementation**:
+
+```typescript
+import { Memory } from '@mastra/memory';
+
+export const DEFAULT_WORKING_MEMORY_TEMPLATE = `# User Profile
+
+## Identity
+- Name:
+- Role / Company:
+
+## Preferences
+- Communication style: [e.g., concise, detailed]
+- Constraints / things to avoid:
+
+## Session State
+- Current goal:
+- Open items:
+`;
+
+export function createDefaultMemory(
+  template: string = DEFAULT_WORKING_MEMORY_TEMPLATE,
+): Memory {
+  return new Memory({
+    options: {
+      workingMemory: { enabled: true, scope: 'resource', template },
+      // semanticRecall: intentionally off
+    },
+  });
+}
+```
+
+**Acceptance criteria**:
+- Typecheck passes.
+- `mediaProcessor` + `mediaSupervisor` use `memory: createDefaultMemory()` (NOT bare `new Memory()`); sub-agents have no `memory`.
+- Working memory only persists per user when the caller passes `memory: { thread, resource }` — document this contract in `README.md`.
+
+---
+
 ## `src/mastra/tools/nca-test.ts`
 
 **Purpose**: Mastra tool wrapping `GET /v1/toolkit/test`. Lets the agent verify the NCA deployment is healthy. Useful for diagnostics in conversations.
@@ -561,13 +646,51 @@ If the response includes `"endpoint": "/v1/toolkit/job/status"` (even if it erro
 
 ---
 
+## Remaining NCA tools (full set)
+
+The five sections above are the detailed reference implementations. The template ships **20 tools total** — one thin `createTool` per NCA Toolkit endpoint, each routed through `nca.ts` with the same shape (validate input with Zod → `ncaRequest(path, body)` → return job/result). The remaining 15 follow the identical pattern; build them by copying the closest detailed example. All are POST except `nca-test` (GET).
+
+| Tool (id) | File | Endpoint | Purpose |
+|---|---|---|---|
+| `ncaTest` | `nca-test.ts` | `GET /v1/toolkit/test` | Health check — NCA reachable, key valid, S3 working |
+| `getJobStatus` | `get-job-status.ts` | `/v1/toolkit/job/status` | Poll one job by `job_id` |
+| `getJobsStatus` | `get-jobs-status.ts` | `/v1/toolkit/jobs/status` | List statuses of all recent jobs |
+| `captionVideo` | `caption-video.ts` | `/v1/video/caption` | Burn captions into a video |
+| `trimVideo` | `trim-video.ts` | `/v1/video/trim` | Trim to start/end time |
+| `cutVideo` | `cut-video.ts` | `/v1/video/cut` | Remove time segments, keep the rest |
+| `splitVideo` | `split-video.ts` | `/v1/video/split` | Split into multiple segments |
+| `concatenateVideos` | `concatenate-videos.ts` | `/v1/video/concatenate` | Join multiple videos into one |
+| `videoThumbnail` | `video-thumbnail.ts` | `/v1/video/thumbnail` | Extract a thumbnail at a timestamp |
+| `concatenateAudio` | `concatenate-audio.ts` | `/v1/audio/concatenate` | Join multiple audio files into one |
+| `transcribeMedia` | `transcribe-media.ts` | `/v1/media/transcribe` | Speech-to-text on audio/video |
+| `cutMedia` | `cut-media.ts` | `/v1/media/cut` | Remove time segments from audio/video |
+| `convertMedia` | `convert-media.ts` | `/v1/media/convert` | Convert to a different format |
+| `convertToMp3` | `convert-to-mp3.ts` | `/v1/media/convert/mp3` | Convert any media to MP3 |
+| `mediaMetadata` | `media-metadata.ts` | `/v1/media/metadata` | Duration, codec, resolution, bitrate, format |
+| `detectSilence` | `detect-silence.ts` | `/v1/media/silence` | Find silent intervals (start/end array) |
+| `generateAss` | `generate-ass.ts` | `/v1/media/generate/ass` | Transcribe + format as styled ASS subtitles |
+| `screenshotWebpage` | `screenshot-webpage.ts` | `/v1/image/screenshot/webpage` | Screenshot a webpage URL |
+| `imageToVideo` | `image-to-video.ts` | `/v1/image/convert/video` | Static image → video with Ken Burns effect |
+| `ffmpegCompose` | `ffmpeg-compose.ts` | `/v1/ffmpeg/compose` | Arbitrary multi-input ffmpeg pipeline |
+
+**Which agent uses which** (see the agents section below):
+- `videoAgent`: captionVideo, trimVideo, cutVideo, splitVideo, concatenateVideos, videoThumbnail, getJobStatus
+- `audioAgent`: concatenateAudio, getJobStatus
+- `mediaAgent`: transcribeMedia, cutMedia, convertMedia, convertToMp3, mediaMetadata, detectSilence, generateAss, ffmpegCompose, getJobStatus
+- `imageAgent`: screenshotWebpage, imageToVideo, getJobStatus
+- `toolkitAgent`: ncaTest, getJobStatus, getJobsStatus
+- `mediaProcessor` (`_example.ts`): ncaTest, captionVideo, transcribeMedia, ffmpegCompose, getJobStatus
+
+**Acceptance criteria**: all 20 tool files exist, each exports a `createTool` whose `id` matches the table, typecheck passes, and every tool routes through `ncaRequest` (no direct `fetch`).
+
+---
+
 ## `src/mastra/agents/_example.ts`
 
-**Purpose**: Production media-processing agent. Demonstrates all 5 tools and the polling pattern.
+**Purpose**: Production media-processing agent. Demonstrates the polling pattern over its 5 tools (a representative subset of the 20; the full set is split across the sub-agents).
 
 ```typescript
 import { Agent } from '@mastra/core/agent';
-import { Memory } from '@mastra/memory';
 
 import { ncaTest } from '../tools/nca-test';
 import { captionVideo } from '../tools/caption-video';
@@ -579,6 +702,8 @@ import {
   answerRelevancyScorer,
 } from '../scorers/_example.scorers';
 import { env } from '../../lib/env';
+import { createDefaultMemory } from '../lib/memory';
+import { defaultInputProcessors, defaultOutputProcessors } from '../lib/processors';
 
 /**
  * # Media Processor Agent (canonical example)
@@ -631,7 +756,9 @@ Rules:
 - Cite the result URL when an operation completes.`,
   model: 'anthropic/claude-haiku-4-5',
   tools: { ncaTest, captionVideo, transcribeMedia, ffmpegCompose, getJobStatus },
-  memory: new Memory(),
+  memory: createDefaultMemory(),
+  inputProcessors: defaultInputProcessors,
+  outputProcessors: defaultOutputProcessors,
   scorers: {
     toolCallAccuracy: {
       scorer: toolCallAccuracyScorer,
@@ -646,6 +773,99 @@ Rules:
 ```
 
 The `env.USE_AIMOCK ? 0 : 1` pattern for `answerRelevancy` matches what the voice template settled on (the LLM-judged scorer can't be mocked usefully).
+
+**Memory + processors across the agent fleet** (the live template has grown past this single agent): `mediaProcessorAgent` and the orchestrator `mediaSupervisorAgent` both use `createDefaultMemory()` and the shared `inputProcessors` / `outputProcessors`. The 5 sub-agents (`audioAgent`, `imageAgent`, `mediaAgent`, `toolkitAgent`, `videoAgent`) spread in the shared **processors** but are intentionally **stateless** — no `memory`. The supervisor owns the conversation; sub-agents are invoked per-task as agents-as-tools, so giving each its own working-memory store would be wrong. When adding a new agent, copy this rule: top-level/conversational agents get memory; delegated tool-agents do not.
+
+---
+
+## `src/mastra/agents/media-supervisor.ts`
+
+**Purpose**: Orchestrator agent (`mediaSupervisor`). Instead of calling tools directly, it delegates to the 5 specialist sub-agents by domain. Use it for multi-step pipelines that span endpoint categories.
+
+```typescript
+import { Agent } from '@mastra/core/agent';
+
+import { videoAgent } from './video-agent';
+import { audioAgent } from './audio-agent';
+import { mediaAgent } from './media-agent';
+import { imageAgent } from './image-agent';
+import { toolkitAgent } from './toolkit-agent';
+import { answerRelevancyScorer } from '../scorers/_example.scorers';
+import { env } from '../../lib/env';
+import { createDefaultMemory } from '../lib/memory';
+import { defaultInputProcessors, defaultOutputProcessors } from '../lib/processors';
+
+export const mediaSupervisorAgent = new Agent({
+  id: 'mediaSupervisor',
+  name: 'Media Supervisor',
+  description: 'Coordinates multi-step NCA workflows by delegating to specialist agents (video, audio, media, image, toolkit).',
+  instructions: `You coordinate media processing tasks by delegating to domain-specific agents.
+// ...routing rules: video→videoAgent, audio→audioAgent, transcribe/ffmpeg/convert→mediaAgent,
+//    screenshots/image→imageAgent, health/job-status→toolkitAgent; subagents poll internally.`,
+  model: 'anthropic/claude-haiku-4-5',
+  agents: { videoAgent, audioAgent, mediaAgent, imageAgent, toolkitAgent },
+  memory: createDefaultMemory(),
+  inputProcessors: defaultInputProcessors,
+  outputProcessors: defaultOutputProcessors,
+  scorers: {
+    answerRelevancy: {
+      scorer: answerRelevancyScorer,
+      sampling: { type: 'ratio', rate: env.USE_AIMOCK ? 0 : 1 },
+    },
+  },
+});
+```
+
+**Key points**:
+- Uses `agents: {...}`, not `tools:` — Mastra exposes each sub-agent to the supervisor as a callable tool.
+- Has `createDefaultMemory()` because it owns the user conversation. The sub-agents do not.
+- The instructions encode the delegation routing table.
+
+**Acceptance criteria**:
+- Registers without error; Studio shows `mediaSupervisor` and lets you chat with it.
+- A video request routes to `videoAgent`; a health check routes to `toolkitAgent`.
+- All 5 sub-agents are imported and passed via `agents`.
+
+---
+
+## Sub-agents: `video-agent.ts`, `audio-agent.ts`, `media-agent.ts`, `image-agent.ts`, `toolkit-agent.ts`
+
+**Purpose**: Five domain specialists the supervisor delegates to. Each is a thin agent wrapping one tool group. They all share the same shape:
+
+```typescript
+import { Agent } from '@mastra/core/agent';
+import { /* its domain tools */ } from '../tools/...';
+import { defaultInputProcessors, defaultOutputProcessors } from '../lib/processors';
+
+export const videoAgent = new Agent({
+  id: 'videoAgent',
+  name: 'Video Agent',
+  description: 'Handles all video operations: ...',
+  model: 'anthropic/claude-haiku-4-5',
+  tools: { /* domain tools + getJobStatus */ },
+  inputProcessors: defaultInputProcessors,
+  outputProcessors: defaultOutputProcessors,
+  // NO memory — stateless; the supervisor owns conversation state.
+  instructions: `...available operations + "poll getJobStatus every 3s up to 30x for queued jobs"...`,
+});
+```
+
+Per-agent specifics:
+
+| Agent | id | Tools | Role |
+|---|---|---|---|
+| videoAgent | `videoAgent` | `captionVideo`, `trimVideo`, `concatenateVideos`, `cutVideo`, `splitVideo`, `videoThumbnail`, `getJobStatus` | All video ops |
+| audioAgent | `audioAgent` | `concatenateAudio`, `getJobStatus` | Join audio tracks |
+| mediaAgent | `mediaAgent` | `transcribeMedia`, `ffmpegCompose`, `cutMedia`, `generateAss`, `mediaMetadata`, `detectSilence`, `convertMedia`, `convertToMp3`, `getJobStatus` | Generic media: transcode, ffmpeg, metadata, silence |
+| imageAgent | `imageAgent` | `screenshotWebpage`, `imageToVideo`, `getJobStatus` | Screenshots, image-to-video (Ken Burns) |
+| toolkitAgent | `toolkitAgent` | `ncaTest`, `getJobStatus`, `getJobsStatus` | Health + job status |
+
+**Acceptance criteria**:
+- All 5 register without error and each carries `inputProcessors` / `outputProcessors`.
+- **None of the 5 has a `memory:` field** (stateless by design).
+- Each agent's instructions tell it to poll `getJobStatus` for queued jobs.
+
+> Note: several sub-agent tools (`concatenate-audio`, `trim-video`, `cut-media`, `generate-ass`, `media-metadata`, `detect-silence`, `convert-media`, `convert-to-mp3`, `get-jobs-status`, `screenshot-webpage`, `image-to-video`, `concatenate-videos`, `cut-video`, `split-video`, `video-thumbnail`) are not yet itemized in this spec's tools section, which still lists only the original 5. That's pre-existing tools-spec drift, separate from agent topology.
 
 ---
 
