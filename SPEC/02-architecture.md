@@ -26,22 +26,45 @@ template-mastra-nca/
 │   │   └── env.ts                        # Extended (no breaking changes)
 │   └── mastra/
 │       ├── agents/
-│       │   └── _example.ts               # REPLACED — media processor agent
+│       │   ├── _example.ts               # REPLACED — mediaProcessor (general-purpose, standalone)
+│       │   ├── media-supervisor.ts       # NEW — mediaSupervisor; delegates to the 5 sub-agents
+│       │   ├── video-agent.ts            # NEW — videoAgent sub-agent
+│       │   ├── audio-agent.ts            # NEW — audioAgent sub-agent
+│       │   ├── media-agent.ts            # NEW — mediaAgent sub-agent (generic transcode/ffmpeg/etc.)
+│       │   ├── image-agent.ts            # NEW — imageAgent sub-agent
+│       │   └── toolkit-agent.ts          # NEW — toolkitAgent sub-agent (health + job status)
 │       ├── index.ts                      # Inherited; agent registration updated
 │       ├── lib/
 │       │   ├── aimock.ts                 # From base, unchanged
+│       │   ├── memory.ts                 # From base — createDefaultMemory() working memory baseline
 │       │   ├── nca.ts                    # NEW — typed HTTP client for NCA Toolkit
+│       │   ├── processors.ts             # From base — shared default input/output processors
 │       │   └── supabase.ts               # From base, unchanged
 │       ├── scorers/
 │       │   ├── _example.scorers.ts       # REPLACED — tool-call accuracy + answer relevancy
 │       │   └── datasets/
 │       │       └── _example.json         # REPLACED — NCA agent eval dataset
-│       ├── tools/
-│       │   ├── nca-test.ts               # NEW — health check
-│       │   ├── caption-video.ts          # NEW — /v1/video/caption
-│       │   ├── transcribe-media.ts       # NEW — /v1/media/transcribe
-│       │   ├── ffmpeg-compose.ts         # NEW — /v1/ffmpeg/compose
-│       │   └── get-job-status.ts         # NEW — /v1/toolkit/job/status
+│       ├── tools/                        # 20 NCA Toolkit wrappers (one per endpoint)
+│       │   ├── nca-test.ts               # /v1/toolkit/test — health check
+│       │   ├── get-job-status.ts         # /v1/toolkit/job/status — poll one job
+│       │   ├── get-jobs-status.ts        # /v1/toolkit/jobs/status — list all jobs
+│       │   ├── caption-video.ts          # /v1/video/caption
+│       │   ├── trim-video.ts             # /v1/video/trim
+│       │   ├── cut-video.ts              # /v1/video/cut
+│       │   ├── split-video.ts            # /v1/video/split
+│       │   ├── concatenate-videos.ts     # /v1/video/concatenate
+│       │   ├── video-thumbnail.ts        # /v1/video/thumbnail
+│       │   ├── concatenate-audio.ts      # /v1/audio/concatenate
+│       │   ├── transcribe-media.ts       # /v1/media/transcribe
+│       │   ├── cut-media.ts              # /v1/media/cut
+│       │   ├── convert-media.ts          # /v1/media/convert
+│       │   ├── convert-to-mp3.ts         # /v1/media/convert/mp3
+│       │   ├── media-metadata.ts         # /v1/media/metadata
+│       │   ├── detect-silence.ts         # /v1/media/silence
+│       │   ├── generate-ass.ts           # /v1/media/generate/ass
+│       │   ├── screenshot-webpage.ts     # /v1/image/screenshot/webpage
+│       │   ├── image-to-video.ts         # /v1/image/convert/video
+│       │   └── ffmpeg-compose.ts         # /v1/ffmpeg/compose
 │       └── workflows/                    # Empty
 └── tsconfig.json                         # Inherited
 ```
@@ -82,13 +105,17 @@ All base deps. Critically: no new HTTP client needed — Node's built-in `fetch`
 | Component | File | Job |
 |---|---|---|
 | Env loader extension | `src/lib/env.ts` | Adds `NCA_BASE_URL`, `NCA_API_KEY`, optional NCA settings |
+| Memory baseline | `src/mastra/lib/memory.ts` | From base. `createDefaultMemory()`: working memory ON (resource-scoped), semantic recall OFF. Used by `mediaProcessor` + `mediaSupervisor`; sub-agents are stateless (no memory). |
+| Processor baseline | `src/mastra/lib/processors.ts` | From base. `defaultInputProcessors` (UnicodeNormalizer) + `defaultOutputProcessors` (TokenLimiter); model-backed safety processors present-but-commented (opt-in). Spread into ALL agents incl. sub-agents. |
 | HTTP client | `src/mastra/lib/nca.ts` | Single function: `ncaRequest<T>(path, body, opts)`. Handles auth, retries, timeout, type safety. |
-| `nca-test` tool | `src/mastra/tools/nca-test.ts` | GET `/v1/toolkit/test` — proves NCA is reachable, API key valid, S3 working |
-| `caption-video` tool | `src/mastra/tools/caption-video.ts` | POST `/v1/video/caption` — adds captions to a video URL |
-| `transcribe-media` tool | `src/mastra/tools/transcribe-media.ts` | POST `/v1/media/transcribe` — speech-to-text on audio/video URL |
-| `ffmpeg-compose` tool | `src/mastra/tools/ffmpeg-compose.ts` | POST `/v1/ffmpeg/compose` — arbitrary ffmpeg composition from URLs |
-| `get-job-status` tool | `src/mastra/tools/get-job-status.ts` | POST `/v1/toolkit/job/status` with `{ job_id }` in body — poll a previously-started job |
-| Media processor agent | `src/mastra/agents/_example.ts` | Production agent. Uses all 5 tools. Demonstrates polling pattern in instructions. |
+| NCA tool wrappers (20) | `src/mastra/tools/*.ts` | One thin `createTool` per NCA Toolkit endpoint, all routed through `nca.ts`. Toolkit: `ncaTest`, `getJobStatus`, `getJobsStatus`. Video: `captionVideo`, `trimVideo`, `cutVideo`, `splitVideo`, `concatenateVideos`, `videoThumbnail`. Audio: `concatenateAudio`. Media (generic): `transcribeMedia`, `cutMedia`, `convertMedia`, `convertToMp3`, `mediaMetadata`, `detectSilence`, `generateAss`. Image: `screenshotWebpage`, `imageToVideo`. Plus `ffmpegCompose` (arbitrary pipeline). Full table in `03-files.md`. |
+| `mediaProcessor` agent | `src/mastra/agents/_example.ts` | Standalone general-purpose agent (id `mediaProcessor`). Tools: `ncaTest`, `captionVideo`, `transcribeMedia`, `ffmpegCompose`, `getJobStatus`. Demonstrates the polling pattern. Uses `createDefaultMemory()` + shared processors + answer-relevancy scorer. |
+| `mediaSupervisor` agent | `src/mastra/agents/media-supervisor.ts` | Orchestrator (id `mediaSupervisor`). Holds the 5 sub-agents via `agents: {...}` and delegates by domain. No tools of its own. Uses `createDefaultMemory()` + shared processors + answer-relevancy scorer. |
+| `videoAgent` sub-agent | `src/mastra/agents/video-agent.ts` | Video ops: caption, trim, concatenate, cut, split, thumbnail. Tools: `captionVideo`, `trimVideo`, `concatenateVideos`, `cutVideo`, `splitVideo`, `videoThumbnail`, `getJobStatus`. Processors only — **no memory** (stateless). |
+| `audioAgent` sub-agent | `src/mastra/agents/audio-agent.ts` | Audio ops: join audio tracks. Tools: `concatenateAudio`, `getJobStatus`. Processors only — **no memory**. |
+| `mediaAgent` sub-agent | `src/mastra/agents/media-agent.ts` | Generic media ops: transcribe, ffmpeg, cut, ASS subtitles, metadata, silence detection, format/MP3 conversion. Tools: `transcribeMedia`, `ffmpegCompose`, `cutMedia`, `generateAss`, `mediaMetadata`, `detectSilence`, `convertMedia`, `convertToMp3`, `getJobStatus`. Processors only — **no memory**. |
+| `imageAgent` sub-agent | `src/mastra/agents/image-agent.ts` | Image ops: webpage screenshot, image-to-video (Ken Burns). Tools: `screenshotWebpage`, `imageToVideo`, `getJobStatus`. Processors only — **no memory**. |
+| `toolkitAgent` sub-agent | `src/mastra/agents/toolkit-agent.ts` | Utility ops: health check, single + bulk job status. Tools: `ncaTest`, `getJobStatus`, `getJobsStatus`. Processors only — **no memory**. |
 | Scorers | `src/mastra/scorers/_example.scorers.ts` | Tool-call accuracy + answer relevancy |
 | Eval dataset | `src/mastra/scorers/datasets/_example.json` | Canonical media-processing requests with expected tool calls |
 | Connectivity script | `scripts/nca-ping.ts` | One-shot health check; runs outside the agent for fast diagnostic |

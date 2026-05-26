@@ -54,6 +54,21 @@ curl -X POST http://localhost:4111/api/agents/mediaProcessor/generate \
 
 For streaming responses, use `/stream` instead of `/generate`. Full OpenAPI spec at `/api/openapi.json`. Interactive docs at `/swagger-ui` (dev only).
 
+#### Working memory (persist context per user)
+
+The `mediaProcessor` and `mediaSupervisor` agents have **working memory** enabled (resource-scoped — see `src/mastra/lib/memory.ts`). For it to persist across a user's conversations, pass `memory.resource` (a stable user ID) and `memory.thread` (the conversation ID) in the body:
+
+```bash
+curl -X POST http://localhost:4111/api/agents/mediaProcessor/generate \
+  -H "Content-Type: application/json" \
+  -d '{
+    "messages":[{"role":"user","content":"Run an NCA health check"}],
+    "memory":{"resource":"user-alice-456","thread":"conversation-123"}
+  }'
+```
+
+Without `memory.resource`, working memory falls back to thread-only. The 5 sub-agents (audio/image/media/toolkit/video) are stateless by design — the supervisor owns the conversation. Semantic recall is intentionally off.
+
 ### A2A (Agent-to-Agent Protocol)
 
 Google's open standard for agent-to-agent communication. JSON-RPC over HTTP.

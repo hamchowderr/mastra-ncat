@@ -8,6 +8,7 @@ import { detectSilence } from '../tools/detect-silence';
 import { convertMedia } from '../tools/convert-media';
 import { convertToMp3 } from '../tools/convert-to-mp3';
 import { getJobStatus } from '../tools/get-job-status';
+import { defaultInputProcessors, defaultOutputProcessors } from '../lib/processors';
 
 export const mediaAgent = new Agent({
   id: 'mediaAgent',
@@ -15,6 +16,8 @@ export const mediaAgent = new Agent({
   description: 'Handles generic media operations on audio or video: transcription, ffmpeg composition, cutting segments, ASS subtitle generation, metadata extraction, silence detection, and format conversion.',
   model: 'anthropic/claude-haiku-4-5',
   tools: { transcribeMedia, ffmpegCompose, cutMedia, generateAss, mediaMetadata, detectSilence, convertMedia, convertToMp3, getJobStatus },
+  inputProcessors: defaultInputProcessors,
+  outputProcessors: defaultOutputProcessors,
   instructions: `You handle generic media processing tasks using the NCA Toolkit.
 
 Available operations:

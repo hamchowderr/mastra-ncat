@@ -1,5 +1,4 @@
 import { Agent } from '@mastra/core/agent';
-import { Memory } from '@mastra/memory';
 
 import { ncaTest } from '../tools/nca-test';
 import { captionVideo } from '../tools/caption-video';
@@ -8,6 +7,8 @@ import { ffmpegCompose } from '../tools/ffmpeg-compose';
 import { getJobStatus } from '../tools/get-job-status';
 import { answerRelevancyScorer } from '../scorers/_example.scorers';
 import { env } from '../../lib/env';
+import { defaultInputProcessors, defaultOutputProcessors } from '../lib/processors';
+import { createDefaultMemory } from '../lib/memory';
 
 /**
  * # Media Processor Agent (canonical example)
@@ -56,7 +57,10 @@ Rules:
 - Cite the result URL when an operation completes.`,
   model: 'anthropic/claude-haiku-4-5',
   tools: { ncaTest, captionVideo, transcribeMedia, ffmpegCompose, getJobStatus },
-  memory: new Memory(),
+  memory: createDefaultMemory(),
+  // Shared safety/hygiene baseline — see src/mastra/lib/processors.ts.
+  inputProcessors: defaultInputProcessors,
+  outputProcessors: defaultOutputProcessors,
   scorers: {
     answerRelevancy: {
       scorer: answerRelevancyScorer,

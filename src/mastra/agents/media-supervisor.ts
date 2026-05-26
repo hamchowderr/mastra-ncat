@@ -1,5 +1,4 @@
 import { Agent } from '@mastra/core/agent';
-import { Memory } from '@mastra/memory';
 
 import { videoAgent } from './video-agent';
 import { audioAgent } from './audio-agent';
@@ -8,6 +7,8 @@ import { imageAgent } from './image-agent';
 import { toolkitAgent } from './toolkit-agent';
 import { answerRelevancyScorer } from '../scorers/_example.scorers';
 import { env } from '../../lib/env';
+import { defaultInputProcessors, defaultOutputProcessors } from '../lib/processors';
+import { createDefaultMemory } from '../lib/memory';
 
 export const mediaSupervisorAgent = new Agent({
   id: 'mediaSupervisor',
@@ -42,7 +43,10 @@ Rules:
     imageAgent,
     toolkitAgent,
   },
-  memory: new Memory(),
+  memory: createDefaultMemory(),
+  // Shared safety/hygiene baseline — see src/mastra/lib/processors.ts.
+  inputProcessors: defaultInputProcessors,
+  outputProcessors: defaultOutputProcessors,
   scorers: {
     answerRelevancy: {
       scorer: answerRelevancyScorer,

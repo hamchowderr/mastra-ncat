@@ -2,6 +2,7 @@ import { Agent } from '@mastra/core/agent';
 import { screenshotWebpage } from '../tools/screenshot-webpage';
 import { imageToVideo } from '../tools/image-to-video';
 import { getJobStatus } from '../tools/get-job-status';
+import { defaultInputProcessors, defaultOutputProcessors } from '../lib/processors';
 
 export const imageAgent = new Agent({
   id: 'imageAgent',
@@ -9,6 +10,8 @@ export const imageAgent = new Agent({
   description: 'Handles image operations: capturing webpage screenshots and converting static images to video with Ken Burns effect.',
   model: 'anthropic/claude-haiku-4-5',
   tools: { screenshotWebpage, imageToVideo, getJobStatus },
+  inputProcessors: defaultInputProcessors,
+  outputProcessors: defaultOutputProcessors,
   instructions: `You handle image processing tasks using the NCA Toolkit.
 
 Available operations:

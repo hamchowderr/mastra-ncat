@@ -1,6 +1,7 @@
 import { Agent } from '@mastra/core/agent';
 import { concatenateAudio } from '../tools/concatenate-audio';
 import { getJobStatus } from '../tools/get-job-status';
+import { defaultInputProcessors, defaultOutputProcessors } from '../lib/processors';
 
 export const audioAgent = new Agent({
   id: 'audioAgent',
@@ -8,6 +9,8 @@ export const audioAgent = new Agent({
   description: 'Handles audio operations: joining multiple audio files into a single track.',
   model: 'anthropic/claude-haiku-4-5',
   tools: { concatenateAudio, getJobStatus },
+  inputProcessors: defaultInputProcessors,
+  outputProcessors: defaultOutputProcessors,
   instructions: `You handle audio processing tasks using the NCA Toolkit.
 
 Available operations:

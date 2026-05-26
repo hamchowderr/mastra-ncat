@@ -13,6 +13,12 @@ The high-impact ones for this template:
 3. **DuckDB requires glibc** — Docker uses `node:22-slim`, not Alpine.
 4. **PostHog telemetry leaks errors in restricted networks** — set `MASTRA_TELEMETRY_DISABLED=1`.
 5. **AIMock requires Anthropic agent model.** OpenAI now uses Responses API which AIMock doesn't intercept; Google has hardcoded base URL. Anthropic is the only provider whose Mastra adapter respects `ANTHROPIC_BASE_URL`. (Inherited lesson from voice template.)
+6. **Resource-scoped working memory silently no-ops without `resource`.** `createDefaultMemory()` uses `scope: 'resource'`; it only persists per user when the caller passes `memory: { thread, resource }` to `agent.generate()` / the REST body. Omit `resource` → silent fallback to thread-only, no error. Requires a `mastra_resources`-capable store (Postgres/Supabase here — fine).
+7. **`lib/processors.ts` holds agent processors, NOT the observability span processor.** `SensitiveDataFilter` in `index.ts` is a `spanOutputProcessors` entry (scrubs traces). The agent baseline is `UnicodeNormalizer` + `TokenLimiter` in `lib/processors.ts`. They're not memory processors, so they don't suppress Mastra's auto-added `MessageHistory` / `WorkingMemory`.
+
+## Memory is per-agent: supervisor has it, sub-agents don't
+
+`mediaProcessorAgent` and `mediaSupervisorAgent` use `createDefaultMemory()`. The 5 sub-agents (`audioAgent`, `imageAgent`, `mediaAgent`, `toolkitAgent`, `videoAgent`) have the shared **processors** but NO `memory` — they're stateless task-runners the supervisor delegates to. Giving a delegated agent-as-tool its own working-memory store is wrong: the supervisor owns the conversation. If you add an agent, decide which it is before wiring `memory`.
 
 ## NCA-specific gotchas
 

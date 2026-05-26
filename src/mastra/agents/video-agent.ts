@@ -6,6 +6,7 @@ import { cutVideo } from '../tools/cut-video';
 import { splitVideo } from '../tools/split-video';
 import { videoThumbnail } from '../tools/video-thumbnail';
 import { getJobStatus } from '../tools/get-job-status';
+import { defaultInputProcessors, defaultOutputProcessors } from '../lib/processors';
 
 export const videoAgent = new Agent({
   id: 'videoAgent',
@@ -13,6 +14,8 @@ export const videoAgent = new Agent({
   description: 'Handles all video operations: captioning, trimming, concatenating, cutting segments, splitting, and thumbnail extraction.',
   model: 'anthropic/claude-haiku-4-5',
   tools: { captionVideo, trimVideo, concatenateVideos, cutVideo, splitVideo, videoThumbnail, getJobStatus },
+  inputProcessors: defaultInputProcessors,
+  outputProcessors: defaultOutputProcessors,
   instructions: `You handle video processing tasks using the NCA Toolkit.
 
 Available operations:
