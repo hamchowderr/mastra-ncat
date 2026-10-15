@@ -104,22 +104,15 @@ To use from Claude Desktop, add to your `claude_desktop_config.json`:
 
 All seven agents appear as tools: `ask_mediaProcessor`, `ask_mediaSupervisor`, `ask_videoAgent`, `ask_audioAgent`, `ask_mediaAgent`, `ask_imageAgent`, `ask_toolkitAgent`. Note the URL uses the MCPServer `id` field (`nca-mcp`), not the config key in `src/mastra/index.ts` (`ncaMcp`).
 
-**Testing MCP via curl**: The protocol is session-based — you must send `initialize` first and pass the returned `mcp-session-id` header in all subsequent calls. Omitting the session header causes `tools/list` to return an empty list.
+**Testing MCP via curl**: `@mastra/mcp` 2.x serves only the MCP **2026-07-28** revision. Every request is self-contained — there is no `initialize` handshake and no `mcp-session-id` header. Each request names the revision in an `MCP-Protocol-Version` header and in a `_meta` envelope. Clients that only speak the older (2024/2025) revisions get `400 Unsupported protocol version`; upgrade the client, or pin `@mastra/mcp` 1.x if you must serve them.
 
 ```bash
-# Step 1: initialize and capture session ID
-SESSION=$(curl -si -X POST http://localhost:4111/api/mcp/nca-mcp/mcp \
-  -H "Content-Type: application/json" \
-  -H "Accept: application/json, text/event-stream" \
-  -d '{"jsonrpc":"2.0","method":"initialize","id":1,"params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"test","version":"1.0.0"}}}' \
-  | grep -i "mcp-session-id" | tr -d '\r' | awk '{print $2}')
-
-# Step 2: list tools (pass session ID)
 curl -s -X POST http://localhost:4111/api/mcp/nca-mcp/mcp \
   -H "Content-Type: application/json" \
   -H "Accept: application/json, text/event-stream" \
-  -H "mcp-session-id: $SESSION" \
-  -d '{"jsonrpc":"2.0","method":"tools/list","id":2}'
+  -H "MCP-Protocol-Version: 2026-07-28" \
+  -H "Mcp-Method: tools/list" \
+  -d '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{"_meta":{"io.modelcontextprotocol/protocolVersion":"2026-07-28","io.modelcontextprotocol/clientInfo":{"name":"curl","version":"1.0.0"},"io.modelcontextprotocol/clientCapabilities":{}}}}'
 ```
 
 ### Studio (visual UI + Editor)
