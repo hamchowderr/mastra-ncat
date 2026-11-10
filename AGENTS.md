@@ -136,12 +136,12 @@ Every agent registered in `Mastra({ agents: { ... } })` is reachable through fou
 | REST | `POST /api/agents/{agentId}/generate` | Use `/stream` for streaming |
 | A2A card | `GET /api/.well-known/{agentId}/agent-card.json` | Agent metadata |
 | A2A execute | `POST /api/a2a/{agentId}` | JSON-RPC `message/send` |
-| MCP | `POST /api/mcp/{mcpServerId}/mcp` | Session-based; `initialize` before `tools/list` |
+| MCP | `POST /api/mcp/{mcpServerId}/mcp` | Stateless, MCP 2026-07-28 only (`@mastra/mcp` 2.x) |
 | Studio + Editor | `http://localhost:4111` | Browser UI |
 
 The MCP URL uses the `id` field from the `MCPServer` constructor, not the key in `mcpServers: {}`. For this template, the MCP endpoint is `/api/mcp/nca-mcp/mcp`.
 
-MCP is session-based. Send `initialize` first; the response includes an `mcp-session-id` header. Pass that header in every subsequent request (`tools/list`, tool invocations). Without it, `tools/list` returns an empty array — not an error, just silently wrong.
+MCP is stateless on `@mastra/mcp` 2.x: it serves only the 2026-07-28 revision, with no `initialize` handshake and no `mcp-session-id` header. Each request carries `MCP-Protocol-Version: 2026-07-28` and a `_meta` envelope (see the README curl example). Pre-2026 clients are rejected with `400 Unsupported protocol version` — serving them requires `@mastra/mcp` 1.x.
 
 Every agent in the `agents` map must also appear in the `MCPServer({ agents: { ... } })` constructor to be reachable via MCP. Every agent registered with MCPServer must have a non-empty `description` field or the server will throw at boot.
 
