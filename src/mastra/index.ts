@@ -67,7 +67,14 @@ const pgStore = new PostgresStore({ id: 'mastra-storage', connectionString: env.
 // stay public (so healthchecks and the Studio login screen still work). Leave
 // the secret unset for open local dev. Shared-secret only — no external provider.
 const server = env.MASTRA_JWT_SECRET
-  ? { auth: new MastraJwtAuth({ secret: env.MASTRA_JWT_SECRET }) }
+  ? {
+      auth: new MastraJwtAuth({ secret: env.MASTRA_JWT_SECRET }),
+      // Core 1.83 serves Mastra's built-in MCP server at /api/mcp in production
+      // whenever server.auth is set, with every toolset by default. memory and
+      // observability would expose every user's threads and traces, so serve
+      // only agents and workflows.
+      mcp: { toolsets: ['agents', 'workflows'] as ('agents' | 'workflows')[] },
+    }
   : undefined;
 
 export const mastra = new Mastra({
